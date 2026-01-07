@@ -1,43 +1,80 @@
 AI ATS Vision - Smart Resume Analyzer
 
-A full-stack Applicant Tracking System (ATS) analyzer built with Python (Flask) and Gemini 2.5 Flash.
+A powerful, full-stack Applicant Tracking System (ATS) analyzer built with Python (Flask) and Gemini 2.5 Flash. This tool provides deep semantic analysis of resumes against job descriptions, offering match scores, gap analysis, and actionable revision strategies.
 
 🚀 Features
 
-Universal Field Analysis: Works for any industry (Tech, Healthcare, Marketing, etc.).
+Universal Analysis: Field-agnostic logic that works for Tech, Healthcare, Marketing, and more.
 
-PDF Parsing: Extracts text from PDF resumes using PyPDF2.
+PDF Extraction: Automated text parsing from PDF resumes using PyPDF2.
 
-Secure Secret Management: Uses secrets.env to protect your Gemini API keys.
+AI Intelligence: Powered by Google's Gemini 2.5 Flash for high-speed, accurate evaluations.
 
-Professional Reports: Generates structured Markdown reports with tables and match scores.
+Cloud-Ready: Fully optimized for serverless deployment on Vercel.
+
+Secure: Integrated secret management via environment variables.
+
+Professional Reports: Beautifully rendered Markdown reports with print-to-PDF support.
 
 🛠️ Tech Stack
 
-Backend: Flask, Google GenAI SDK, PyPDF2, python-dotenv.
+Backend: Python (Flask), Google GenAI SDK, PyPDF2
 
-Frontend: Tailwind CSS, Marked.js (for Markdown rendering).
+Frontend: HTML5, Tailwind CSS, JavaScript (ES6+), Marked.js
 
-📦 Setup & Security
+Deployment: Vercel (Serverless Functions)
 
-Clone & Install:
+📂 Project Structure
 
-git clone [https://github.com/GSaikowshik/ai-ats-analyzer.git]
+/ai-ats-analyzer
+├── api/
+│   └── index.py       # Python Flask backend (Vercel entry point)
+├── index.html         # Frontend UI
+├── requirements.txt   # Python dependencies
+├── vercel.json        # Vercel deployment configuration
+└── .gitignore         # Prevents secrets from being pushed
+
+
+📦 Local Setup
+
+Clone the repository:
+
+git clone [https://github.com/GSaikowshik/ai-ats-analyzer.git](https://github.com/GSaikowshik/ai-ats-analyzer.git)
 cd ai-ats-analyzer
+
+
+Set up a Virtual Environment:
+
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+
+Install Dependencies:
+
 pip install -r requirements.txt
 
 
-Configure Secrets:
-Create a file named secrets.env in the root directory:
+Add your API Key:
+Create a file named secrets.env (or .env) in the root directory:
 
-GOOGLE_API_KEY=your_actual_api_key_here
-
-
-Note: As defined in the .gitignore, this file will not be pushed to GitHub.
-
-Run the Application:
-
-python main.py
+GOOGLE_API_KEY=your_gemini_api_key_here
 
 
-Then open index.html in your browser.
+Run the Backend:
+
+python api/index.py
+
+
+🌐 Deployment (Vercel)
+
+This project is configured for instant deployment on Vercel:
+
+Push your code to GitHub.
+
+Connect your repository to Vercel.
+
+In the Vercel Dashboard, go to Settings > Environment Variables.
+
+Add GOOGLE_API_KEY with your Gemini API key as the value.
+
+Vercel will automatically build and deploy your Python backend and static frontend.
