@@ -3,202 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal AI ATS Analyzer</title>
+    <title>AI ATS Analyzer | Smart Resume Review</title>
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Added Marked.js for beautiful Markdown rendering -->
+    <!-- Marked.js for rendering the AI's Markdown response -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-        .gradient-header {
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        
+        :root { font-family: 'Inter', sans-serif; }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        /* Custom styles for the AI Report content */
-        #output table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1.5rem 0;
-            font-size: 0.95rem;
-        }
-        #output th, #output td {
-            border: 1px solid #e2e8f0;
-            padding: 12px;
-            text-align: left;
-        }
-        #output th {
-            background-color: #f8fafc;
-            font-weight: 800;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.05em;
-        }
-        #output h3 {
-            font-weight: 800;
-            font-size: 1.25rem;
-            margin-top: 2rem;
-            margin-bottom: 1rem;
-            color: #1e293b;
-        }
-        #output hr {
-            margin: 2rem 0;
-            border: 0;
-            border-top: 1px solid #e2e8f0;
-        }
-        #output ul {
-            list-style-type: disc;
-            padding-left: 1.5rem;
-            margin: 1rem 0;
-        }
-        #output li {
-            margin-bottom: 0.5rem;
-        }
-        #output strong {
-            color: #1e293b;
-            font-weight: 700;
-        }
+
+        /* Markdown Report Styling */
+        #output-content h3 { font-weight: 700; font-size: 1.25rem; margin-top: 1.5rem; color: #1e293b; }
+        #output-content table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.9rem; }
+        #output-content th, #output-content td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+        #output-content th { background-color: #f8fafc; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
+        #output-content hr { margin: 1.5rem 0; border: 0; border-top: 1px solid #e2e8f0; }
+        #output-content ul { list-style-type: disc; padding-left: 1.5rem; margin: 1rem 0; }
+        #output-content li { margin-bottom: 0.5rem; }
+
         @media print {
-            nav, .no-print, #jd, .group { display: none !important; }
-            .glass { box-shadow: none !important; border: none !important; }
+            .no-print { display: none !important; }
             body { background: white; }
+            .print-container { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; }
         }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="bg-slate-50 text-slate-900 min-h-screen">
 
-    <!-- Navigation / Header -->
-    <nav class="gradient-header text-white p-6 shadow-2xl no-print">
-        <div class="max-w-6xl mx-auto flex justify-between items-center">
+    <!-- Header -->
+    <header class="bg-slate-900 text-white py-6 px-8 shadow-lg no-print">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-2">
-                <span class="text-2xl font-black tracking-tighter italic">ATS.<span class="text-blue-400">VISION</span></span>
+                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-xl italic">A</div>
+                <span class="text-xl font-extrabold tracking-tight italic">ATS.<span class="text-blue-400">VISION</span></span>
             </div>
-            <div id="status" class="flex items-center space-x-2 bg-slate-800/50 px-4 py-1.5 rounded-full border border-slate-700">
-                <div id="dot" class="h-2.5 w-2.5 rounded-full bg-slate-500"></div>
-                <span id="text" class="text-xs font-bold uppercase tracking-widest text-slate-400">Initializing</span>
+            <div class="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
+                <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                <span>Vercel Cloud Active</span>
             </div>
         </div>
-    </nav>
+    </header>
 
     <main class="max-w-4xl mx-auto py-12 px-6">
-        <div class="text-center mb-10 no-print">
-            <h2 class="text-4xl font-extrabold text-slate-900 mb-2">Smart Resume Analyzer</h2>
-            <p class="text-slate-500 font-medium">Evaluate your resume against any job description using Gemini AI Intelligence</p>
-        </div>
+        
+        <!-- Input Section -->
+        <div class="glass-panel rounded-3xl shadow-2xl p-8 md:p-10 mb-10 no-print transition-all hover:shadow-blue-100/50">
+            <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                Resume Analyzer
+            </h2>
 
-        <div class="glass rounded-3xl shadow-2xl p-8 md:p-12 border border-white no-print">
-            <div class="grid gap-8">
-                
-                <!-- Job Description Input -->
-                <section>
-                    <div class="flex justify-between items-center mb-3">
-                        <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Target Job Description</label>
-                        <span class="text-[10px] text-slate-400 italic">Paste requirements from LinkedIn, Indeed, etc.</span>
-                    </div>
-                    <textarea id="jd" rows="6" 
-                        class="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-400 outline-none transition-all resize-none text-slate-700" 
-                        placeholder="E.g., We are looking for a Project Manager with 5 years of experience in Agile methodologies..."></textarea>
-                </section>
+            <div class="space-y-6">
+                <!-- Job Description -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Target Job Description</label>
+                    <textarea id="jd-input" rows="5" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-slate-700 placeholder-slate-400" placeholder="Paste the job requirements here..."></textarea>
+                </div>
 
-                <!-- File Upload Section -->
-                <section>
-                    <label class="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 block">Upload Your Resume</label>
-                    <div class="group relative border-2 border-dashed border-slate-300 rounded-2xl p-10 text-center hover:border-blue-500 hover:bg-blue-50/30 transition-all cursor-pointer">
-                        <input type="file" id="file" accept=".pdf" class="absolute inset-0 opacity-0 cursor-pointer">
-                        <div id="fileDisplay">
-                            <div class="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <!-- File Upload -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Upload Resume (PDF)</label>
+                    <div class="relative group">
+                        <input type="file" id="resume-upload" accept=".pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center group-hover:border-blue-400 group-hover:bg-blue-50/50 transition-all">
+                            <div class="text-blue-500 mb-2">
+                                <svg class="w-10 h-10 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             </div>
-                            <p class="text-slate-600 font-bold">Select PDF Resume</p>
-                            <p class="text-xs text-slate-400 mt-1 uppercase">Any Industry • Standard PDF Format</p>
+                            <p id="file-name" class="text-slate-600 font-semibold">Click or drag PDF resume here</p>
+                            <p class="text-xs text-slate-400 mt-1 uppercase">Standard PDF format only</p>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <!-- Action Button -->
-                <button id="btn" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-5 rounded-2xl shadow-xl transition-all active:scale-[0.98] flex justify-center items-center group">
-                    <span id="btnText" class="tracking-widest">ANALYZE MATCH</span>
-                    <div id="spinner" class="hidden ml-3 animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                    <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 7l5 5m0 0l-5 5m5-5H6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <!-- Submit Button -->
+                <button id="analyze-btn" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-5 rounded-2xl shadow-xl transition-all active:scale-[0.98] flex justify-center items-center group">
+                    <span id="btn-text" class="tracking-widest">RUN AI ANALYSIS</span>
+                    <div id="loader" class="hidden ml-3 animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
                 </button>
             </div>
         </div>
 
-        <!-- Analysis Result Display -->
-        <div id="result" class="hidden mt-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div class="glass rounded-3xl shadow-2xl overflow-hidden border border-white">
-                <div class="bg-slate-900 p-6 flex justify-between items-center">
-                    <h3 class="text-white font-bold tracking-tight">AI Evaluation Report</h3>
-                    <button onclick="window.print()" class="text-xs bg-slate-800 text-slate-300 px-3 py-1 rounded-md hover:text-white transition-colors no-print">Save as PDF</button>
+        <!-- Result Section -->
+        <div id="report-section" class="hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 print-container">
+                <div class="bg-slate-900 p-6 flex justify-between items-center no-print">
+                    <h3 class="text-white font-bold">Evaluation Report</h3>
+                    <button onclick="window.print()" class="text-xs bg-slate-800 text-slate-300 px-4 py-2 rounded-xl hover:text-white hover:bg-slate-700 transition-all">
+                        💾 Save as PDF
+                    </button>
                 </div>
-                <div class="p-10">
-                    <div id="output" class="text-slate-700 leading-relaxed max-w-none">
-                        <!-- AI Analysis Content will be rendered here as HTML -->
+                <div class="p-8 md:p-12">
+                    <div id="output-content" class="text-slate-700 leading-relaxed">
+                        <!-- AI Response Renders Here -->
                     </div>
                 </div>
             </div>
         </div>
+
     </main>
 
     <script>
-        // Matching backend port 5500
-        const PORT = 5500;
-        const BASE_URL = `http://127.0.0.1:${PORT}`;
+        // On Vercel, the API is served from the same root
+        const BASE_URL = ""; 
 
-        // Real-time Connection Status Checker
-        async function checkConnection() {
-            try {
-                const response = await fetch(BASE_URL);
-                if(response.ok) {
-                    document.getElementById('dot').className = "h-2.5 w-2.5 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]";
-                    document.getElementById('text').innerText = "Server Live";
-                    document.getElementById('text').classList.replace('text-slate-400', 'text-green-400');
-                }
-            } catch(e) {
-                document.getElementById('dot').className = "h-2.5 w-2.5 rounded-full bg-red-500";
-                document.getElementById('text').innerText = "Server Offline";
-                document.getElementById('text').classList.replace('text-slate-400', 'text-red-400');
-            }
-        }
-        
-        // Initial check and periodic updates
-        checkConnection();
-        setInterval(checkConnection, 10000);
+        const jdInput = document.getElementById('jd-input');
+        const resumeInput = document.getElementById('resume-upload');
+        const fileNameDisplay = document.getElementById('file-name');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const btnText = document.getElementById('btn-text');
+        const loader = document.getElementById('loader');
+        const reportSection = document.getElementById('report-section');
+        const outputContent = document.getElementById('output-content');
 
-        // Update UI on file selection
-        document.getElementById('file').addEventListener('change', e => {
-            const file = e.target.files[0];
-            if(file) {
-                document.getElementById('fileDisplay').innerHTML = `
-                    <div class="flex flex-col items-center">
-                        <div class="bg-green-100 p-3 rounded-full mb-3">
-                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </div>
-                        <p class="text-slate-800 font-bold">${file.name}</p>
-                        <p class="text-xs text-slate-400 mt-1 uppercase">Ready for AI processing</p>
-                    </div>
-                `;
+        // Update file name on selection
+        resumeInput.addEventListener('change', () => {
+            if (resumeInput.files.length > 0) {
+                fileNameDisplay.innerText = resumeInput.files[0].name;
+                fileNameDisplay.classList.add('text-blue-600');
             }
         });
 
-        // Main Analysis Handler
-        document.getElementById('btn').addEventListener('click', async () => {
-            const jd = document.getElementById('jd').value;
-            const file = document.getElementById('file').files[0];
-            const btn = document.getElementById('btn');
-            const btnText = document.getElementById('btnText');
-            const spinner = document.getElementById('spinner');
-            const resultDiv = document.getElementById('result');
-            const output = document.getElementById('output');
+        analyzeBtn.addEventListener('click', async () => {
+            const jd = jdInput.value.trim();
+            const file = resumeInput.files[0];
 
-            if(!jd || !file) {
-                return alert("Required: Please provide a job description and upload your resume.");
+            if (!jd || !file) {
+                alert("Please provide both a Job Description and a Resume PDF.");
+                return;
             }
 
-            // Enter Loading State
-            btn.disabled = true;
-            btnText.innerText = "PROCESSING REPORT...";
-            spinner.classList.remove('hidden');
-            resultDiv.classList.add('hidden');
+            // Start Loading State
+            analyzeBtn.disabled = true;
+            btnText.innerText = "ANALYZING...";
+            loader.classList.remove('hidden');
+            reportSection.classList.add('hidden');
 
             const formData = new FormData();
             formData.append('resume_file', file);
@@ -210,23 +155,28 @@
                     body: formData
                 });
 
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Server error occurred");
+                }
+
                 const data = await response.json();
                 
-                if(data.error) throw new Error(data.error);
+                // Use marked to parse markdown into HTML
+                outputContent.innerHTML = marked.parse(data.analysis);
+                
+                // Show Report
+                reportSection.classList.remove('hidden');
+                reportSection.scrollIntoView({ behavior: 'smooth' });
 
-                // Populate and show results using Marked.js for HTML generation
-                output.innerHTML = marked.parse(data.analysis);
-                resultDiv.classList.remove('hidden');
-                resultDiv.scrollIntoView({ behavior: 'smooth' });
-
-            } catch (err) {
-                alert(`Error: ${err.message}`);
-                console.error("Backend Error:", err);
+            } catch (error) {
+                console.error("Analysis Error:", error);
+                alert(`Error: ${error.message}`);
             } finally {
-                // Reset UI State
-                btn.disabled = false;
-                btnText.innerText = "ANALYZE MATCH";
-                spinner.classList.add('hidden');
+                // End Loading State
+                analyzeBtn.disabled = false;
+                btnText.innerText = "RUN AI ANALYSIS";
+                loader.classList.add('hidden');
             }
         });
     </script>
