@@ -42,6 +42,7 @@ class ATSRequest(BaseModel):
     api_key: str | None = None
 
 @app.post("/analyze")
+@app.post("/api/analyze")
 async def analyze_resume(request: ATSRequest):
     try:
         # Determine the active client to use (custom request key or default server key)

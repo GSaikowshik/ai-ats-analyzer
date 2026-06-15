@@ -501,7 +501,7 @@
                     api_key: customApiKey.value.trim() || null
                 };
 
-                const response = await fetch(`${BASE_URL}/analyze`, {
+                const response = await fetch(`${BASE_URL}/api/analyze`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
