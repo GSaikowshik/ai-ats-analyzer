@@ -176,6 +176,22 @@
             </div>
         </div>
 
+        <!-- Elegant Error State Card -->
+        <div id="error-section" class="hidden glass-card rounded-3xl p-10 max-w-md mx-auto text-center border border-rose-500/20 shadow-2xl relative no-print">
+            <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-rose-500/5 rounded-full blur-xl"></div>
+            
+            <div class="w-16 h-16 mx-auto mb-6 bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center text-rose-400 shadow-lg shadow-rose-950/20">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </div>
+
+            <h3 class="text-lg font-bold mb-3 font-display text-white">Analysis Failed</h3>
+            <p id="error-message-text" class="text-xs text-slate-400 leading-relaxed mb-6">An unexpected error occurred during the resume evaluation.</p>
+            
+            <button id="error-retry-btn" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-3.5 rounded-xl transition-all shadow-lg shadow-rose-950/40">
+                Adjust Inputs & Retry
+            </button>
+        </div>
+
         <!-- Premium Dashboard Result Section -->
         <div id="report-section" class="hidden space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 print-container">
             
@@ -328,7 +344,11 @@
 
         // PDF.js configuration
         const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        if (pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        } else {
+            console.error("PDF.js library failed to load.");
+        }
 
         // DOM elements
         const jdInput = document.getElementById('jd-input');
@@ -389,6 +409,10 @@
             
             updateStepState(step1, 'complete');
             updateStepState(step2, 'active');
+            
+            if (!pdfjsLib) {
+                throw new Error("PDF.js library is not loaded. Please make sure you are connected to the internet, or paste the text manually.");
+            }
             
             const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
             let text = "";
@@ -510,8 +534,17 @@
                 });
 
                 if (!response.ok) {
-                    const errObj = await response.json();
-                    throw new Error(errObj.detail || "An error occurred on the evaluation backend.");
+                    let errMessage = "An error occurred on the evaluation backend.";
+                    try {
+                        const errObj = await response.json();
+                        errMessage = errObj.detail || errMessage;
+                    } catch (_) {
+                        try {
+                            const errText = await response.text();
+                            if (errText) errMessage = errText.substring(0, 200);
+                        } catch (_) {}
+                    }
+                    throw new Error(errMessage);
                 }
 
                 updateStepState(step3, 'complete');
@@ -532,11 +565,11 @@
                 
             } catch (error) {
                 console.error("Evaluation Error:", error);
-                alert(`Error: ${error.message}`);
+                document.getElementById('error-message-text').innerText = error.message || "An unexpected error occurred during the resume evaluation.";
                 
-                // Roll back to inputs
+                // Roll back loader and show error card
                 loadingSection.classList.add('hidden');
-                inputSection.classList.remove('hidden');
+                document.getElementById('error-section').classList.remove('hidden');
             }
         });
 
@@ -550,6 +583,12 @@
             fileNameDisplay.innerText = "Click or drag PDF resume here";
             fileNameDisplay.className = "text-slate-300 font-medium text-sm";
             dropZone.className = "border-2 border-dashed border-slate-800 rounded-2xl p-8 text-center group-hover:border-indigo-500 group-hover:bg-indigo-500/5 transition-all duration-300";
+        });
+
+        // Error retry action
+        document.getElementById('error-retry-btn').addEventListener('click', () => {
+            document.getElementById('error-section').classList.add('hidden');
+            inputSection.classList.remove('hidden');
         });
 
         // Render dashboard elements with anims
@@ -613,8 +652,9 @@
             // Matched keywords tags
             const matchedContainer = document.getElementById('matched-keywords-container');
             matchedContainer.innerHTML = '';
-            if (data.matched_keywords && data.matched_keywords.length > 0) {
-                data.matched_keywords.forEach(kw => {
+            const matchedKeywords = Array.isArray(data.matched_keywords) ? data.matched_keywords : [];
+            if (matchedKeywords.length > 0) {
+                matchedKeywords.forEach(kw => {
                     const chip = document.createElement('span');
                     chip.className = "px-3 py-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/10 text-xs font-semibold rounded-lg hover:scale-105 transition-all duration-200 cursor-default flex items-center gap-1.5";
                     chip.innerHTML = `
@@ -630,8 +670,9 @@
             // Missing keywords tags
             const missingContainer = document.getElementById('missing-keywords-container');
             missingContainer.innerHTML = '';
-            if (data.missing_keywords && data.missing_keywords.length > 0) {
-                data.missing_keywords.forEach(kw => {
+            const missingKeywords = Array.isArray(data.missing_keywords) ? data.missing_keywords : [];
+            if (missingKeywords.length > 0) {
+                missingKeywords.forEach(kw => {
                     const chip = document.createElement('span');
                     chip.className = "px-3 py-1 bg-rose-500/10 text-rose-300 border border-rose-500/10 text-xs font-semibold rounded-lg hover:scale-105 transition-all duration-200 cursor-default flex items-center gap-1.5";
                     chip.innerHTML = `
@@ -641,14 +682,15 @@
                     missingContainer.appendChild(chip);
                 });
             } else {
-                missingContainer.innerHTML = '<span class="text-xs text-slate-600">All key keywords detected.</span>';
+                missingContainer.innerHTML = '<span class="text-xs text-slate-655">All key keywords detected.</span>';
             }
 
             // Actionable feedback list
             const feedbackContainer = document.getElementById('actionable-feedback-container');
             feedbackContainer.innerHTML = '';
-            if (data.actionable_feedback && data.actionable_feedback.length > 0) {
-                data.actionable_feedback.forEach((item, index) => {
+            const actionableFeedback = Array.isArray(data.actionable_feedback) ? data.actionable_feedback : [];
+            if (actionableFeedback.length > 0) {
+                actionableFeedback.forEach((item, index) => {
                     const stepEl = document.createElement('div');
                     stepEl.className = "flex items-start gap-4 p-4.5 bg-slate-900/30 border border-slate-900 rounded-2xl hover:border-indigo-500/20 hover:bg-slate-900/50 transition-all duration-300 group";
                     stepEl.innerHTML = `

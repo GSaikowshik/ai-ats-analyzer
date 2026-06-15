@@ -9,6 +9,7 @@ export default function ATSDashboard() {
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('ats_custom_gemini_key', apiKey);
@@ -25,8 +26,8 @@ export default function ATSDashboard() {
     
     // Extract text using PDF.js if available in the window context
     try {
-      setLoading(true);
-      setLoadingStep('Reading PDF structure...');
+      setPdfLoading(true);
+      setError('');
       const arrayBuffer = await file.arrayBuffer();
       
       const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
@@ -39,7 +40,6 @@ export default function ATSDashboard() {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
       }
 
-      setLoadingStep('Extracting resume text...');
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       let text = '';
       for (let i = 1; i <= pdf.numPages; i++) {
@@ -54,13 +54,11 @@ export default function ATSDashboard() {
       }
 
       setResumeText(text.trim());
-      setLoading(false);
-      setLoadingStep('');
     } catch (err) {
       console.error(err);
       setError(err.message || 'Failed to extract text from PDF.');
-      setLoading(false);
-      setLoadingStep('');
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -97,8 +95,17 @@ export default function ATSDashboard() {
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.detail || 'An error occurred on the evaluation backend.');
+        let errMessage = 'An error occurred on the evaluation backend.';
+        try {
+          const errData = await response.json();
+          errMessage = errData.detail || errMessage;
+        } catch (_) {
+          try {
+            const errText = await response.text();
+            if (errText) errMessage = errText.substring(0, 200);
+          } catch (_) {}
+        }
+        throw new Error(errMessage);
       }
 
       setLoadingStep('Compiling evaluator report...');
@@ -118,7 +125,7 @@ export default function ATSDashboard() {
   };
 
   // SVG parameters for circular score ring
-  const score = result?.match_score || 0;
+  const score = result ? (parseInt(result.match_score) || 0) : 0;
   const strokeDasharray = 263.89; // 2 * pi * 42
   const strokeDashoffset = strokeDasharray - (score / 100) * strokeDasharray;
 
@@ -166,19 +173,33 @@ export default function ATSDashboard() {
           </div>
         </div>
 
+        {/* Error Phase */}
+        {error && !loading && (
+          <div className="bg-slate-900/85 border border-rose-500/30 rounded-3xl p-8 max-w-md mx-auto text-center shadow-2xl space-y-6 relative overflow-hidden backdrop-blur-xl">
+            <div className="absolute -top-10 -left-10 w-20 h-20 bg-rose-500/10 rounded-full blur-xl" />
+            <div className="w-16 h-16 mx-auto bg-rose-500/10 border border-rose-500/20 rounded-full flex items-center justify-center text-rose-400 shadow-lg shadow-rose-950/20">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold font-display text-white">Analysis Failed</h3>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed">{error}</p>
+            </div>
+            <button
+              onClick={() => setError('')}
+              className="w-full bg-rose-600 hover:bg-rose-500 text-white font-semibold py-3 rounded-xl transition-all shadow-lg shadow-rose-950/40"
+            >
+              Adjust Inputs & Retry
+            </button>
+          </div>
+        )}
+
         {/* Input Phase */}
-        {!result && !loading && (
+        {!result && !loading && !error && (
           <div className="bg-slate-900/45 border border-white/5 rounded-3xl p-8 backdrop-blur-xl shadow-2xl space-y-6">
             <h2 className="text-xl font-bold font-display text-white flex items-center gap-2">
               <svg className="w-5.5 h-5.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2-2 2 0 00-2-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
               Resume ATS Analysis
             </h2>
-
-            {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-sm">
-                {error}
-              </div>
-            )}
 
             <div className="space-y-6">
               {/* Job Description */}
@@ -199,16 +220,25 @@ export default function ATSDashboard() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* File Upload Zone */}
-                  <div className="relative border-2 border-dashed border-slate-800 hover:border-indigo-500 bg-slate-900/10 rounded-2xl p-6 text-center transition-all flex flex-col justify-center items-center">
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleFileChange}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <svg className="w-8 h-8 text-indigo-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                    <span className="text-slate-350 text-xs font-medium">{fileName || "Click/Drag PDF to Extract"}</span>
-                    <span className="text-[10px] text-slate-500 mt-1">Extracts text automatically</span>
+                  <div className="relative border-2 border-dashed border-slate-800 hover:border-indigo-500 bg-slate-900/10 rounded-2xl p-6 text-center transition-all flex flex-col justify-center items-center min-h-[140px]">
+                    {pdfLoading ? (
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs text-indigo-400 font-medium">Extracting PDF text...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={handleFileChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        <svg className="w-8 h-8 text-indigo-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                        <span className="text-slate-350 text-xs font-medium">{fileName || "Click/Drag PDF to Extract"}</span>
+                        <span className="text-[10px] text-slate-500 mt-1">Extracts text automatically</span>
+                      </>
+                    )}
                   </div>
 
                   {/* Manual Paste area */}
@@ -236,7 +266,8 @@ export default function ATSDashboard() {
 
               <button
                 onClick={handleAnalyze}
-                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-950/40 transition-all active:scale-[0.99]"
+                disabled={pdfLoading}
+                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-indigo-950/40 transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 RUN AI ANALYSIS
               </button>
@@ -352,7 +383,7 @@ export default function ATSDashboard() {
                         Matched ({result.matched_keywords?.length || 0})
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {result.matched_keywords && result.matched_keywords.length > 0 ? (
+                        {Array.isArray(result.matched_keywords) && result.matched_keywords.length > 0 ? (
                           result.matched_keywords.map((kw, idx) => (
                             <span key={idx} className="px-2.5 py-0.5 bg-emerald-500/10 text-emerald-300 border border-emerald-500/10 text-[10px] font-medium rounded-md flex items-center gap-1">
                               <svg className="w-2.5 h-2.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -360,7 +391,7 @@ export default function ATSDashboard() {
                             </span>
                           ))
                         ) : (
-                          <span className="text-[10px] text-slate-650">No matches identified.</span>
+                          <span className="text-[10px] text-slate-655">No matches identified.</span>
                         )}
                       </div>
                     </div>
@@ -374,7 +405,7 @@ export default function ATSDashboard() {
                         Missing ({result.missing_keywords?.length || 0})
                       </div>
                       <div className="flex flex-wrap gap-1.5">
-                        {result.missing_keywords && result.missing_keywords.length > 0 ? (
+                        {Array.isArray(result.missing_keywords) && result.missing_keywords.length > 0 ? (
                           result.missing_keywords.map((kw, idx) => (
                             <span key={idx} className="px-2.5 py-0.5 bg-rose-500/10 text-rose-300 border border-rose-500/10 text-[10px] font-medium rounded-md flex items-center gap-1">
                               <svg className="w-2.5 h-2.5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -382,7 +413,7 @@ export default function ATSDashboard() {
                             </span>
                           ))
                         ) : (
-                          <span className="text-[10px] text-slate-650">No critical missing keywords.</span>
+                          <span className="text-[10px] text-slate-655">All key keywords detected.</span>
                         )}
                       </div>
                     </div>
@@ -397,7 +428,7 @@ export default function ATSDashboard() {
                   </h4>
 
                   <div className="space-y-3">
-                    {result.actionable_feedback && result.actionable_feedback.length > 0 ? (
+                    {Array.isArray(result.actionable_feedback) && result.actionable_feedback.length > 0 ? (
                       result.actionable_feedback.map((item, idx) => (
                         <div key={idx} className="flex items-start gap-3.5 p-3.5 bg-slate-950/20 border border-slate-900 rounded-xl hover:border-indigo-500/20 hover:bg-slate-900/30 transition-all duration-200 group">
                           <span className="flex-shrink-0 w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs group-hover:bg-indigo-600 group-hover:text-white transition-all shadow shadow-indigo-500/5">
