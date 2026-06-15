@@ -1,73 +1,86 @@
 import os
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+import json
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from google import genai
-import PyPDF2
+from google.genai import types
 
-# No need for load_dotenv() here as Vercel handles environment variables natively
-app = Flask(__name__)
-CORS(app)
+# Map GOOGLE_API_KEY to GEMINI_API_KEY if configured in environment
+if "GOOGLE_API_KEY" in os.environ and "GEMINI_API_KEY" not in os.environ:
+    os.environ["GEMINI_API_KEY"] = os.environ["GOOGLE_API_KEY"]
 
-# The API Key is pulled from Vercel's 'Environment Variables' settings
-API_KEY = os.environ.get("GOOGLE_API_KEY")
-
-def extract_text_from_pdf(file):
-    """Utility to extract text from a PDF file object."""
+# Load from secrets.env for local development
+if not os.environ.get("GEMINI_API_KEY") and os.path.exists("secrets.env"):
     try:
-        pdf_reader = PyPDF2.PdfReader(file)
-        text = ""
-        for page in pdf_reader.pages:
-            content = page.extract_text()
-            if content:
-                text += content
-        return text.strip()
+        with open("secrets.env", "r") as f:
+            for line in f:
+                if line.strip().startswith("GOOGLE_API_KEY="):
+                    os.environ["GEMINI_API_KEY"] = line.split("=", 1)[1].strip()
+                    break
     except Exception as e:
-        print(f"Extraction error: {e}")
-        return None
+        print(f"Error loading secrets.env: {e}")
 
-@app.route('/analyze', methods=['POST'])
-def analyze_resume():
-    """Endpoint for ATS analysis."""
-    if not API_KEY:
-        return jsonify({"error": "Gemini API Key is missing on the server configuration."}), 500
-        
+# Initialize the new SDK client at module level
+# It will natively pick up GEMINI_API_KEY from environment variables
+client = genai.Client()
+
+app = FastAPI()
+
+# Enable CORS for local development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class ATSRequest(BaseModel):
+    resume_text: str
+    job_description: str
+    api_key: str | None = None
+
+@app.post("/analyze")
+async def analyze_resume(request: ATSRequest):
     try:
-        client = genai.Client(api_key=API_KEY)
-        jd = request.form.get("jd")
-        
-        if 'resume_file' not in request.files:
-            return jsonify({"error": "No resume file detected in the request."}), 400
-            
-        resume_file = request.files['resume_file']
-        resume_text = extract_text_from_pdf(resume_file)
+        # Determine the active client to use (custom request key or default server key)
+        if request.api_key:
+            active_client = genai.Client(api_key=request.api_key)
+        else:
+            if not os.environ.get("GEMINI_API_KEY"):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Gemini API Key is missing. Please configure GEMINI_API_KEY on the server or provide a custom key in settings."
+                )
+            active_client = client
 
-        if not resume_text or not jd:
-            return jsonify({"error": "Missing resume text or job description content."}), 400
-
-        # General ATS Prompt for all fields
         prompt = f"""
-        SYSTEM: You are an expert ATS (Applicant Tracking System) Scanner.
-        TASK: Evaluate the Resume against the Job Description.
-        [JD]: {jd}
-        [RESUME]: {resume_text}
-        
-        OUTPUT FORMAT (Markdown): 
-        1. MATCH SCORE: Provide a clear percentage [0-100]%.
-        2. TOP MATCHES: List matching skills and experience.
-        3. GAP ANALYSIS: Identify missing keywords or skills.
-        4. REVISION STRATEGY: 3 actionable steps to improve the resume.
+        You are an expert technical recruiter. Evaluate the provided resume against the job description. Output a strict JSON object containing:
+        - 'match_score': integer (0-100)
+        - 'missing_keywords': array of strings
+        - 'matched_keywords': array of strings
+        - 'profile_summary': string
+        - 'actionable_feedback': array of strings
+
+        Job Description:
+        {request.job_description}
+
+        Resume:
+        {request.resume_text}
         """
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash-preview-09-2025",
-            contents=prompt
+        response = active_client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.2
+            )
         )
 
-        return jsonify({
-            "analysis": response.text, 
-            "success": True
-        })
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return json.loads(response.text)
 
-# Vercel requires the app to be exported, but we don't call app.run() here
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

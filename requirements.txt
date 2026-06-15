@@ -1,4 +1,4 @@
-Flask
-Flask-Cors
+fastapi
+pydantic
 google-genai
-PyPDF2
+uvicorn

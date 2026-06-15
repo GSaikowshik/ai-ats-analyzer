@@ -3,105 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI ATS Analyzer | Smart Resume Review</title>
-    <!-- Tailwind CSS for styling -->
+    <title>ATS.VISION | Premium AI Resume Analyzer</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Marked.js for rendering the AI's Markdown response -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Google Fonts: Outfit for Headings, Inter for Body -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap');
         
-        :root { font-family: 'Inter', sans-serif; }
-        
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        h1, h2, h3, h4, .font-display {
+            font-family: 'Outfit', sans-serif;
         }
 
-        /* Markdown Report Styling */
-        #output-content h3 { font-weight: 700; font-size: 1.25rem; margin-top: 1.5rem; color: #1e293b; }
-        #output-content table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.9rem; }
-        #output-content th, #output-content td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
-        #output-content th { background-color: #f8fafc; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; }
-        #output-content hr { margin: 1.5rem 0; border: 0; border-top: 1px solid #e2e8f0; }
-        #output-content ul { list-style-type: disc; padding-left: 1.5rem; margin: 1rem 0; }
-        #output-content li { margin-bottom: 0.5rem; }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card-hover:hover {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(99, 102, 241, 0.25);
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.15);
+        }
+
+        .animate-spin-slow {
+            animation: spin 8s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Customize scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
 
         @media print {
             .no-print { display: none !important; }
-            body { background: white; }
-            .print-container { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; }
+            body { background: white; color: black; }
+            .print-container { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; background: transparent !important; }
         }
     </style>
+    <!-- PDF.js via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen">
+<body class="bg-slate-950 text-slate-100 min-h-screen relative overflow-x-hidden selection:bg-indigo-500/30 selection:text-indigo-200">
+
+    <!-- Glowing Background blobs -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none -z-10 no-print">
+        <div class="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full bg-indigo-500/10 blur-[120px] animate-pulse"></div>
+        <div class="absolute top-[30%] -right-40 w-[500px] h-[500px] rounded-full bg-fuchsia-500/10 blur-[120px] animate-pulse" style="animation-delay: 2s;"></div>
+        <div class="absolute bottom-10 left-[20%] w-[400px] h-[400px] rounded-full bg-blue-500/5 blur-[100px] animate-pulse" style="animation-delay: 4s;"></div>
+    </div>
 
     <!-- Header -->
-    <header class="bg-slate-900 text-white py-6 px-8 shadow-lg no-print">
+    <header class="border-b border-slate-900 bg-slate-950/60 backdrop-blur-md sticky top-0 z-50 py-4 px-8 no-print">
         <div class="max-w-5xl mx-auto flex justify-between items-center">
             <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold text-xl italic">A</div>
-                <span class="text-xl font-extrabold tracking-tight italic">ATS.<span class="text-blue-400">VISION</span></span>
+                <div class="w-9 h-9 bg-gradient-to-tr from-indigo-600 to-fuchsia-600 rounded-xl flex items-center justify-center font-bold text-lg text-white shadow-lg shadow-indigo-500/20">A</div>
+                <span class="text-lg font-extrabold tracking-tight font-display">ATS.<span class="bg-gradient-to-r from-indigo-400 to-fuchsia-400 bg-clip-text text-transparent">VISION</span></span>
             </div>
-            <div class="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
-                <span class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                <span>Vercel Cloud Active</span>
+            <div class="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-900/80 px-3.5 py-2 rounded-full border border-slate-800">
+                <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>SYSTEM ENGINE LIVE</span>
             </div>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto py-12 px-6">
+    <main class="max-w-5xl mx-auto py-12 px-6">
         
         <!-- Input Section -->
-        <div class="glass-panel rounded-3xl shadow-2xl p-8 md:p-10 mb-10 no-print transition-all hover:shadow-blue-100/50">
-            <h2 class="text-2xl font-bold mb-6 flex items-center">
-                <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                Resume Analyzer
+        <div id="input-section" class="glass-card rounded-3xl p-8 md:p-10 mb-10 no-print transition-all duration-300 shadow-2xl relative">
+            <h2 class="text-xl font-bold mb-6 flex items-center gap-2 font-display text-white">
+                <svg class="w-5.5 h-5.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2-2 2 0 00-2-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                Resume ATS Scanner
             </h2>
 
             <div class="space-y-6">
                 <!-- Job Description -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Target Job Description</label>
-                    <textarea id="jd-input" rows="5" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-slate-700 placeholder-slate-400" placeholder="Paste the job requirements here..."></textarea>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Target Job Description</label>
+                    <textarea id="jd-input" rows="5" class="w-full p-4 bg-slate-950/60 border border-slate-800 rounded-2xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all text-slate-200 placeholder-slate-600 text-sm leading-relaxed" placeholder="Paste the key job requirements or description here..."></textarea>
                 </div>
 
                 <!-- File Upload -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Upload Resume (PDF)</label>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Upload Resume (PDF)</label>
                     <div class="relative group">
                         <input type="file" id="resume-upload" accept=".pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                        <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center group-hover:border-blue-400 group-hover:bg-blue-50/50 transition-all">
-                            <div class="text-blue-500 mb-2">
-                                <svg class="w-10 h-10 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        <div id="drop-zone" class="border-2 border-dashed border-slate-800 rounded-2xl p-8 text-center group-hover:border-indigo-500 group-hover:bg-indigo-500/5 transition-all duration-300">
+                            <div class="text-indigo-500 mb-3 group-hover:scale-110 transition-transform duration-300">
+                                <svg class="w-10 h-10 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                             </div>
-                            <p id="file-name" class="text-slate-600 font-semibold">Click or drag PDF resume here</p>
-                            <p class="text-xs text-slate-400 mt-1 uppercase">Standard PDF format only</p>
+                            <p id="file-name" class="text-slate-300 font-medium text-sm">Click or drag PDF resume here</p>
+                            <p class="text-xs text-slate-500 mt-1.5 uppercase tracking-wide">Standard PDF format only</p>
                         </div>
                     </div>
                 </div>
 
+                <!-- API Key Custom Input Accordion -->
+                <div class="border border-slate-800/80 bg-slate-900/20 rounded-2xl p-4 transition-all duration-300">
+                    <button id="toggle-settings" class="flex justify-between items-center w-full text-left text-[11px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-200 transition-colors">
+                        <span class="flex items-center gap-2">
+                            <svg class="w-4 h-4 animate-spin-slow text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            Custom Gemini API Key (Optional Local Fallback)
+                        </span>
+                        <span id="settings-arrow" class="transition-transform duration-300 text-xs">▼</span>
+                    </button>
+                    <div id="settings-content" class="hidden mt-4">
+                        <p class="text-xs text-slate-500 mb-2.5">If the server-side Gemini API key is expired or missing, you can enter your own key here. It remains secure in your local browser storage.</p>
+                        <input type="password" id="custom-api-key" class="w-full p-3 bg-slate-950/80 border border-slate-800 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 text-slate-200 outline-none text-sm placeholder-slate-700 transition-all font-mono" placeholder="AIzaSy...">
+                    </div>
+                </div>
+
                 <!-- Submit Button -->
-                <button id="analyze-btn" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-5 rounded-2xl shadow-xl transition-all active:scale-[0.98] flex justify-center items-center group">
-                    <span id="btn-text" class="tracking-widest">RUN AI ANALYSIS</span>
-                    <div id="loader" class="hidden ml-3 animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                <button id="analyze-btn" class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold py-4.5 rounded-2xl shadow-xl shadow-indigo-950/40 transition-all active:scale-[0.99] flex justify-center items-center group relative overflow-hidden">
+                    <div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <span id="btn-text" class="tracking-widest text-sm font-semibold">RUN AI ANALYSIS</span>
                 </button>
             </div>
         </div>
 
-        <!-- Result Section -->
-        <div id="report-section" class="hidden animate-in fade-in slide-in-from-bottom-8 duration-700">
-            <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 print-container">
-                <div class="bg-slate-900 p-6 flex justify-between items-center no-print">
-                    <h3 class="text-white font-bold">Evaluation Report</h3>
-                    <button onclick="window.print()" class="text-xs bg-slate-800 text-slate-300 px-4 py-2 rounded-xl hover:text-white hover:bg-slate-700 transition-all">
-                        💾 Save as PDF
+        <!-- Animated Loading State -->
+        <div id="loading-section" class="hidden glass-card rounded-3xl p-10 max-w-lg mx-auto text-center border border-slate-800 shadow-2xl relative no-print">
+            <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl"></div>
+            
+            <!-- Dynamic Spinner -->
+            <div class="relative w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                <div class="absolute inset-0 border-4 border-indigo-500/10 rounded-full"></div>
+                <div class="absolute inset-0 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <svg class="w-8 h-8 text-indigo-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </div>
+
+            <h3 class="text-lg font-bold mb-4 font-display">Processing Resume</h3>
+            
+            <!-- Loading Stepper -->
+            <div class="space-y-3 max-w-xs mx-auto text-left">
+                <div id="step-1" class="flex items-center gap-3 text-slate-500 transition-colors duration-300">
+                    <span class="step-indicator w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center text-[10px] font-bold">1</span>
+                    <span class="text-xs">Reading PDF structure</span>
+                </div>
+                <div id="step-2" class="flex items-center gap-3 text-slate-500 transition-colors duration-300">
+                    <span class="step-indicator w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center text-[10px] font-bold">2</span>
+                    <span class="text-xs">Extracting resume text</span>
+                </div>
+                <div id="step-3" class="flex items-center gap-3 text-slate-500 transition-colors duration-300">
+                    <span class="step-indicator w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center text-[10px] font-bold">3</span>
+                    <span class="text-xs">Comparing profile matching index</span>
+                </div>
+                <div id="step-4" class="flex items-center gap-3 text-slate-500 transition-colors duration-300">
+                    <span class="step-indicator w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center text-[10px] font-bold">4</span>
+                    <span class="text-xs">Compiling evaluator report</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Premium Dashboard Result Section -->
+        <div id="report-section" class="hidden space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 print-container">
+            
+            <!-- Header bar for dashboard -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900/30 border border-slate-900 rounded-3xl p-6 no-print">
+                <div>
+                    <h3 class="font-bold text-white text-lg font-display">Evaluation Report</h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Resume analysis completed successfully</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="window.print()" class="text-xs bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 px-4 py-2.5 rounded-xl hover:text-white transition-all flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        Print scorecard
+                    </button>
+                    <button id="reanalyze-btn" class="text-xs bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 px-4 py-2.5 rounded-xl hover:bg-indigo-600 hover:text-white transition-all">
+                        Scan another
                     </button>
                 </div>
-                <div class="p-8 md:p-12">
-                    <div id="output-content" class="text-slate-700 leading-relaxed">
-                        <!-- AI Response Renders Here -->
+            </div>
+
+            <!-- Dashboard Columns -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- Left Column: Match Score & Profile Summary -->
+                <div class="md:col-span-1 space-y-8">
+                    
+                    <!-- Score Card -->
+                    <div class="glass-card rounded-3xl p-8 relative overflow-hidden flex flex-col items-center justify-center text-center shadow-xl">
+                        <!-- Decorative background glow -->
+                        <div class="absolute -top-10 -left-10 w-24 h-24 bg-indigo-500/5 rounded-full blur-xl"></div>
+                        
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Match Score</h4>
+                        
+                        <!-- Circular Progress Gauge -->
+                        <div class="relative w-44 h-44 flex items-center justify-center">
+                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <!-- Background Circle -->
+                                <circle cx="50" cy="50" r="42" stroke="#0f172a" stroke-width="7" fill="transparent" />
+                                <!-- Progress Circle -->
+                                <circle id="score-ring" cx="50" cy="50" r="42" stroke="url(#scoreGrad)" stroke-width="7" fill="transparent" 
+                                        stroke-dasharray="263.89" stroke-dashoffset="263.89" stroke-linecap="round" class="transition-all duration-[1200ms] ease-out" />
+                                
+                                <defs>
+                                    <linearGradient id="scoreGradTeal" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#2dd4bf" />
+                                        <stop offset="100%" stop-color="#059669" />
+                                    </linearGradient>
+                                    <linearGradient id="scoreGradAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#fbbf24" />
+                                        <stop offset="100%" stop-color="#d97706" />
+                                    </linearGradient>
+                                    <linearGradient id="scoreGradRose" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#f43f5e" />
+                                        <stop offset="100%" stop-color="#be123c" />
+                                    </linearGradient>
+                                    <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#6366f1" />
+                                        <stop offset="100%" stop-color="#4f46e5" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <!-- Center Text -->
+                            <div class="absolute flex flex-col items-center justify-center">
+                                <span id="score-percent" class="text-4xl font-extrabold tracking-tight text-white font-display">0%</span>
+                                <span id="score-label" class="text-[9px] font-bold uppercase tracking-widest text-slate-500 mt-1">Calculating</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Match Tag -->
+                        <span id="match-badge" class="mt-6 px-4.5 py-1.5 rounded-full text-[10px] font-extrabold tracking-wider uppercase border bg-slate-950/40 cursor-default"></span>
+                    </div>
+
+                    <!-- Profile Summary Card -->
+                    <div id="summary-card" class="glass-card border-l-4 border-indigo-500 rounded-3xl p-8 relative overflow-hidden flex flex-col shadow-xl">
+                        <!-- Quote marks decorator -->
+                        <div class="text-slate-800/20 absolute -top-4 -left-2 text-8xl font-serif select-none pointer-events-none">“</div>
+                        
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 relative z-10">
+                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            Profile Fit Summary
+                        </h4>
+                        
+                        <p id="profile-summary-text" class="text-sm text-slate-300 leading-relaxed italic z-10">
+                            Loading...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right Column: Keyword Match & Actionable Steps -->
+                <div class="md:col-span-2 space-y-8">
+                    <!-- Keyword Analysis Card -->
+                    <div class="glass-card rounded-3xl p-8 shadow-xl space-y-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            Keyword Match Analysis
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <!-- Matched Keywords -->
+                            <div class="bg-emerald-950/10 border border-emerald-900/30 rounded-2xl p-5">
+                                <div class="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider mb-4">
+                                    <span class="p-1 rounded bg-emerald-950 border border-emerald-900 text-emerald-400">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                    </span>
+                                    Matched Keywords
+                                </div>
+                                <div id="matched-keywords-container" class="flex flex-wrap gap-2">
+                                    <!-- Dynamic matched chips -->
+                                </div>
+                            </div>
+
+                            <!-- Missing Keywords -->
+                            <div class="bg-rose-950/10 border border-rose-900/30 rounded-2xl p-5">
+                                <div class="flex items-center gap-2 text-rose-400 font-bold text-xs uppercase tracking-wider mb-4">
+                                    <span class="p-1 rounded bg-rose-950 border border-rose-900 text-rose-400">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                    </span>
+                                    Missing Keywords
+                                </div>
+                                <div id="missing-keywords-container" class="flex flex-wrap gap-2">
+                                    <!-- Dynamic missing chips -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actionable Feedback Card -->
+                    <div class="glass-card rounded-3xl p-8 shadow-xl space-y-6">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                            Revision Strategy
+                        </h4>
+                        
+                        <div id="actionable-feedback-container" class="space-y-4">
+                            <!-- Dynamic steps -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -110,75 +320,349 @@
     </main>
 
     <script>
-        // On Vercel, the API is served from the same root
-        const BASE_URL = ""; 
+        // API Base configuration
+        let BASE_URL = window.location.origin;
+        if (!BASE_URL || BASE_URL.startsWith('file:') || BASE_URL.includes('null')) {
+            BASE_URL = 'http://127.0.0.1:8000';
+        }
 
+        // PDF.js configuration
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // DOM elements
         const jdInput = document.getElementById('jd-input');
         const resumeInput = document.getElementById('resume-upload');
+        const dropZone = document.getElementById('drop-zone');
         const fileNameDisplay = document.getElementById('file-name');
         const analyzeBtn = document.getElementById('analyze-btn');
         const btnText = document.getElementById('btn-text');
-        const loader = document.getElementById('loader');
+        
+        const inputSection = document.getElementById('input-section');
+        const loadingSection = document.getElementById('loading-section');
         const reportSection = document.getElementById('report-section');
-        const outputContent = document.getElementById('output-content');
+        const reanalyzeBtn = document.getElementById('reanalyze-btn');
 
-        // Update file name on selection
-        resumeInput.addEventListener('change', () => {
-            if (resumeInput.files.length > 0) {
-                fileNameDisplay.innerText = resumeInput.files[0].name;
-                fileNameDisplay.classList.add('text-blue-600');
+        // Loading steps elements
+        const step1 = document.getElementById('step-1');
+        const step2 = document.getElementById('step-2');
+        const step3 = document.getElementById('step-3');
+        const step4 = document.getElementById('step-4');
+
+        // API Key Settings
+        const toggleSettings = document.getElementById('toggle-settings');
+        const settingsContent = document.getElementById('settings-content');
+        const settingsArrow = document.getElementById('settings-arrow');
+        const customApiKey = document.getElementById('custom-api-key');
+
+        // Initialize local API Key if saved
+        if (localStorage.getItem('ats_custom_gemini_key')) {
+            customApiKey.value = localStorage.getItem('ats_custom_gemini_key');
+        }
+
+        // Save custom API key on input
+        customApiKey.addEventListener('input', () => {
+            localStorage.setItem('ats_custom_gemini_key', customApiKey.value.trim());
+        });
+
+        // Toggle custom settings
+        toggleSettings.addEventListener('click', () => {
+            settingsContent.classList.toggle('hidden');
+            settingsArrow.classList.toggle('rotate-180');
+        });
+
+        // HTML escaping utility
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // PDF text extraction utility
+        async function extractTextFromPDF(file) {
+            updateStepState(step1, 'active');
+            const arrayBuffer = await file.arrayBuffer();
+            
+            updateStepState(step1, 'complete');
+            updateStepState(step2, 'active');
+            
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let text = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const pageText = content.items.map(item => item.str).join(" ");
+                text += pageText + "\n";
+            }
+            
+            updateStepState(step2, 'complete');
+            return text.trim();
+        }
+
+        function updateStepState(element, state) {
+            const indicator = element.querySelector('.step-indicator');
+            if (state === 'active') {
+                element.classList.remove('text-slate-500', 'text-emerald-500');
+                element.classList.add('text-indigo-400');
+                indicator.className = "step-indicator w-4 h-4 rounded-full border border-indigo-500 bg-indigo-950/50 flex items-center justify-center text-[10px] font-bold text-indigo-400 animate-pulse";
+            } else if (state === 'complete') {
+                element.classList.remove('text-indigo-400', 'text-slate-500');
+                element.classList.add('text-emerald-400');
+                indicator.className = "step-indicator w-4 h-4 rounded-full border border-emerald-500 bg-emerald-950 flex items-center justify-center text-[10px] font-bold text-emerald-400";
+                indicator.innerHTML = "✓";
+            } else {
+                element.classList.remove('text-indigo-400', 'text-emerald-400');
+                element.classList.add('text-slate-500');
+                indicator.className = "step-indicator w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-500";
+            }
+        }
+
+        function resetStepStates() {
+            [step1, step2, step3, step4].forEach(step => updateStepState(step, 'idle'));
+            step1.querySelector('.step-indicator').innerText = "1";
+            step2.querySelector('.step-indicator').innerText = "2";
+            step3.querySelector('.step-indicator').innerText = "3";
+            step4.querySelector('.step-indicator').innerText = "4";
+        }
+
+        // File selection drag & drop events
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-indigo-500', 'bg-indigo-500/5');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-indigo-500', 'bg-indigo-500/5');
+            }, false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0 && files[0].type === 'application/pdf') {
+                resumeInput.files = files;
+                handleFileSelect(files[0]);
+            } else {
+                alert("Only standard PDF documents are supported.");
             }
         });
 
+        resumeInput.addEventListener('change', () => {
+            if (resumeInput.files.length > 0) {
+                handleFileSelect(resumeInput.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            fileNameDisplay.innerText = file.name;
+            fileNameDisplay.classList.remove('text-slate-300');
+            fileNameDisplay.classList.add('text-indigo-400', 'font-semibold');
+            dropZone.classList.add('border-indigo-500/30', 'bg-indigo-950/20');
+        }
+
+        // Analyze action
         analyzeBtn.addEventListener('click', async () => {
             const jd = jdInput.value.trim();
             const file = resumeInput.files[0];
 
             if (!jd || !file) {
-                alert("Please provide both a Job Description and a Resume PDF.");
+                alert("Please provide both the Target Job Description and a Resume PDF.");
                 return;
             }
 
-            // Start Loading State
-            analyzeBtn.disabled = true;
-            btnText.innerText = "ANALYZING...";
-            loader.classList.remove('hidden');
+            // Enter loading state
+            inputSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
             reportSection.classList.add('hidden');
-
-            const formData = new FormData();
-            formData.append('resume_file', file);
-            formData.append('jd', jd);
+            resetStepStates();
 
             try {
+                // Step 1 & 2: Client-side extraction
+                const text = await extractTextFromPDF(file);
+                
+                if (text.length < 15) {
+                    throw new Error("No readable text could be extracted from this PDF. Please verify it is a text-based document (not scanned).");
+                }
+
+                // Step 3: Call API Endpoint
+                updateStepState(step3, 'active');
+                
+                const payload = {
+                    resume_text: text,
+                    job_description: jd,
+                    api_key: customApiKey.value.trim() || null
+                };
+
                 const response = await fetch(`${BASE_URL}/analyze`, {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Server error occurred");
+                    const errObj = await response.json();
+                    throw new Error(errObj.detail || "An error occurred on the evaluation backend.");
                 }
+
+                updateStepState(step3, 'complete');
+                updateStepState(step4, 'active');
 
                 const data = await response.json();
                 
-                // Use marked to parse markdown into HTML
-                outputContent.innerHTML = marked.parse(data.analysis);
-                
-                // Show Report
-                reportSection.classList.remove('hidden');
-                reportSection.scrollIntoView({ behavior: 'smooth' });
+                updateStepState(step4, 'complete');
 
+                // Wait slightly for visual confirmation of steps
+                await new Promise(resolve => setTimeout(resolve, 600));
+
+                renderDashboard(data);
+
+                // Display report dashboard
+                loadingSection.classList.add('hidden');
+                reportSection.classList.remove('hidden');
+                
             } catch (error) {
-                console.error("Analysis Error:", error);
+                console.error("Evaluation Error:", error);
                 alert(`Error: ${error.message}`);
-            } finally {
-                // End Loading State
-                analyzeBtn.disabled = false;
-                btnText.innerText = "RUN AI ANALYSIS";
-                loader.classList.add('hidden');
+                
+                // Roll back to inputs
+                loadingSection.classList.add('hidden');
+                inputSection.classList.remove('hidden');
             }
         });
+
+        // Reset and scan another resume
+        reanalyzeBtn.addEventListener('click', () => {
+            reportSection.classList.add('hidden');
+            inputSection.classList.remove('hidden');
+            
+            // Optional: reset file input but keep Job Description
+            resumeInput.value = '';
+            fileNameDisplay.innerText = "Click or drag PDF resume here";
+            fileNameDisplay.className = "text-slate-300 font-medium text-sm";
+            dropZone.className = "border-2 border-dashed border-slate-800 rounded-2xl p-8 text-center group-hover:border-indigo-500 group-hover:bg-indigo-500/5 transition-all duration-300";
+        });
+
+        // Render dashboard elements with anims
+        function renderDashboard(data) {
+            const score = parseInt(data.match_score) || 0;
+            const scoreRing = document.getElementById('score-ring');
+            const summaryCard = document.getElementById('summary-card');
+
+            // Select colored gradients and status badges based on score
+            let strokeGrad = "url(#scoreGrad)";
+            let matchText = "Low Match";
+            let borderClass = "border-rose-500/30 text-rose-400 bg-rose-500/10";
+
+            if (score >= 80) {
+                strokeGrad = "url(#scoreGradTeal)";
+                matchText = "Strong Match";
+                borderClass = "border-emerald-500/30 text-emerald-400 bg-emerald-500/10";
+                summaryCard.className = "glass-card border-l-4 border-emerald-500 rounded-3xl p-8 relative overflow-hidden flex flex-col shadow-xl";
+            } else if (score >= 50) {
+                strokeGrad = "url(#scoreGradAmber)";
+                matchText = "Good Match";
+                borderClass = "border-amber-500/30 text-amber-400 bg-amber-500/10";
+                summaryCard.className = "glass-card border-l-4 border-amber-500 rounded-3xl p-8 relative overflow-hidden flex flex-col shadow-xl";
+            } else {
+                strokeGrad = "url(#scoreGradRose)";
+                matchText = "Needs Work";
+                borderClass = "border-rose-500/30 text-rose-400 bg-rose-500/10";
+                summaryCard.className = "glass-card border-l-4 border-rose-500 rounded-3xl p-8 relative overflow-hidden flex flex-col shadow-xl";
+            }
+
+            // Update SVG Ring Progress
+            scoreRing.setAttribute('stroke', strokeGrad);
+            const offset = 263.89 - (score / 100) * 263.89;
+            scoreRing.style.strokeDashoffset = offset;
+
+            // Score numerical counter animation
+            let currentScore = 0;
+            const duration = 1200;
+            const intervalTime = 25;
+            const increment = score / (duration / intervalTime);
+            
+            const scoreInterval = setInterval(() => {
+                currentScore += increment;
+                if (currentScore >= score) {
+                    currentScore = score;
+                    clearInterval(scoreInterval);
+                }
+                document.getElementById('score-percent').innerText = `${Math.round(currentScore)}%`;
+            }, intervalTime);
+
+            document.getElementById('score-label').innerText = "Match index";
+
+            // Update badge text and color class
+            const badge = document.getElementById('match-badge');
+            badge.innerText = matchText;
+            badge.className = `mt-6 px-4.5 py-1.5 rounded-full text-[10px] font-extrabold tracking-wider uppercase border ${borderClass} cursor-default`;
+
+            // Profile Summary
+            document.getElementById('profile-summary-text').innerText = data.profile_summary || "Candidate matches key criteria.";
+
+            // Matched keywords tags
+            const matchedContainer = document.getElementById('matched-keywords-container');
+            matchedContainer.innerHTML = '';
+            if (data.matched_keywords && data.matched_keywords.length > 0) {
+                data.matched_keywords.forEach(kw => {
+                    const chip = document.createElement('span');
+                    chip.className = "px-3 py-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/10 text-xs font-semibold rounded-lg hover:scale-105 transition-all duration-200 cursor-default flex items-center gap-1.5";
+                    chip.innerHTML = `
+                        <svg class="w-3 h-3 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        ${escapeHTML(kw)}
+                    `;
+                    matchedContainer.appendChild(chip);
+                });
+            } else {
+                matchedContainer.innerHTML = '<span class="text-xs text-slate-600">No key match attributes found.</span>';
+            }
+
+            // Missing keywords tags
+            const missingContainer = document.getElementById('missing-keywords-container');
+            missingContainer.innerHTML = '';
+            if (data.missing_keywords && data.missing_keywords.length > 0) {
+                data.missing_keywords.forEach(kw => {
+                    const chip = document.createElement('span');
+                    chip.className = "px-3 py-1 bg-rose-500/10 text-rose-300 border border-rose-500/10 text-xs font-semibold rounded-lg hover:scale-105 transition-all duration-200 cursor-default flex items-center gap-1.5";
+                    chip.innerHTML = `
+                        <svg class="w-3 h-3 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        ${escapeHTML(kw)}
+                    `;
+                    missingContainer.appendChild(chip);
+                });
+            } else {
+                missingContainer.innerHTML = '<span class="text-xs text-slate-600">All key keywords detected.</span>';
+            }
+
+            // Actionable feedback list
+            const feedbackContainer = document.getElementById('actionable-feedback-container');
+            feedbackContainer.innerHTML = '';
+            if (data.actionable_feedback && data.actionable_feedback.length > 0) {
+                data.actionable_feedback.forEach((item, index) => {
+                    const stepEl = document.createElement('div');
+                    stepEl.className = "flex items-start gap-4 p-4.5 bg-slate-900/30 border border-slate-900 rounded-2xl hover:border-indigo-500/20 hover:bg-slate-900/50 transition-all duration-300 group";
+                    stepEl.innerHTML = `
+                        <span class="flex-shrink-0 w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 shadow-md shadow-indigo-500/5">
+                            ${index + 1}
+                        </span>
+                        <p class="text-sm text-slate-300 mt-1 leading-relaxed">${escapeHTML(item)}</p>
+                    `;
+                    feedbackContainer.appendChild(stepEl);
+                });
+            } else {
+                feedbackContainer.innerHTML = '<p class="text-xs text-slate-600">No revisions suggested. Ready for submission.</p>';
+            }
+        }
     </script>
 </body>
 </html>
